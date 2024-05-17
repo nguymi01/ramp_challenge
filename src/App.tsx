@@ -10,30 +10,37 @@ import { Employee } from "./utils/types"
 
 export function App() {
   const { data: employees, ...employeeUtils } = useEmployees()
-  const [eId, setEmployeeID] = useState("")
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
-  const [isLoading, setIsLoading] = useState(false)
-
+  // const [isLoading, setIsLoading] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
     [paginatedTransactions, transactionsByEmployee]
   )
 
   const loadAllTransactions = useCallback(async () => {
-    setIsLoading(true)
-
+    // setIsLoaded(false)
     await employeeUtils.fetchAll()
     await paginatedTransactionsUtils.fetchAll()
+
     transactionsByEmployeeUtils.invalidateData()
-    setIsLoading(false)
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
-      setEmployeeID(employeeId)
-      paginatedTransactionsUtils.invalidateData()
+      // setEmployeeID(employeeId)
+      if (paginatedTransactionsUtils) {
+        setIsLoaded(true)
+      }
+
+      // setIsLoaded(false)
       await transactionsByEmployeeUtils.fetchById(employeeId)
+      if (paginatedTransactionsUtils) {
+        setIsLoaded(false)
+      }
+
+      paginatedTransactionsUtils.invalidateData()
     },
     [paginatedTransactionsUtils, transactionsByEmployeeUtils]
   )
@@ -65,10 +72,8 @@ export function App() {
             if (newValue === null) {
               return
             } else if (newValue === EMPTY_EMPLOYEE) {
-              setEmployeeID(newValue.id)
               await loadAllTransactions()
             } else {
-              setEmployeeID(newValue.id)
               await loadTransactionsByEmployee(newValue.id)
             }
           }}
@@ -77,7 +82,7 @@ export function App() {
         <div className="RampBreak--l" />
 
         <div className="RampGrid">
-          <Transactions transactions={transactions} />
+          <Transactions transactions={transactions} isLoaded={isLoaded} />
 
           {transactions !== null && paginatedTransactions?.nextPage && (
             <button
