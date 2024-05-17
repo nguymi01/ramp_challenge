@@ -22,16 +22,17 @@ export function App() {
 
   const loadAllTransactions = useCallback(async () => {
     setIsLoading(true)
-    transactionsByEmployeeUtils.invalidateData()
+
     await employeeUtils.fetchAll()
     await paginatedTransactionsUtils.fetchAll()
+    transactionsByEmployeeUtils.invalidateData()
     setIsLoading(false)
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
-      paginatedTransactionsUtils.invalidateData()
       setEmployeeID(employeeId)
+      paginatedTransactionsUtils.invalidateData()
       await transactionsByEmployeeUtils.fetchById(employeeId)
     },
     [paginatedTransactionsUtils, transactionsByEmployeeUtils]
@@ -39,7 +40,6 @@ export function App() {
 
   useEffect(() => {
     if (employees === null && !employeeUtils.loading) {
-      console.log(`Hi ${employeeUtils.loading}`)
       loadAllTransactions()
     }
   }, [employeeUtils.loading, employees, loadAllTransactions])
@@ -52,7 +52,7 @@ export function App() {
         <hr className="RampBreak--l" />
 
         <InputSelect<Employee>
-          isLoading={isLoading}
+          isLoading={employeeUtils.loading}
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
           label="Filter by employee"
@@ -79,16 +79,12 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {transactions !== null && paginatedTransactions?.nextPage && (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
               onClick={async () => {
-                if (eId === "" || eId === null) {
-                  await loadAllTransactions()
-                } else {
-                  await loadTransactionsByEmployee(eId)
-                }
+                await loadAllTransactions()
               }}
             >
               View More
